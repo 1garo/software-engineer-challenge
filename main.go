@@ -58,6 +58,8 @@ func main() {
 	}
 
 	go func() {
+		resp := handler.Pfile()
+		handler.Parsing(resp)	
 		server.Serve(listener)
 	}()
 	defer Stop(server)
