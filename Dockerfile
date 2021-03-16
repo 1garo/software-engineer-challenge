@@ -1,5 +1,6 @@
 FROM golang:1.14.6-alpine3.12 as builder
 COPY go.mod go.sum /go/src/github.com/PicPay/software-engineer-challenge/
+
 WORKDIR /go/src/github.com/PicPay/software-engineer-challenge
 RUN go mod download
 COPY . /go/src/github.com/PicPay/software-engineer-challenge
@@ -11,5 +12,6 @@ RUN apk add --no-cache ca-certificates && update-ca-certificates
 #     apk add curl ca-certificates && \
 #     update-ca-certificates 
 COPY --from=builder /go/src/github.com/PicPay/software-engineer-challenge/build/software-engineer-challenge /usr/bin/software-engineer-challenge
+ADD new-f.csv /tmp/
 EXPOSE 8080 8080
 ENTRYPOINT ["/usr/bin/software-engineer-challenge"]
