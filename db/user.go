@@ -1,16 +1,14 @@
 package db
 
 import (
-	// "database/sql"
-	"strconv"
-	"strings"
+	"fmt"
 
 	"github.com/PicPay/software-engineer-challenge/models"
 )
 
-func (db Database) GetAllUsers() (*models.UserList, error) {
+func (db Database) GetAllUsersLimit(User *models.User, start, page int) (*models.UserList, error) {
 	list := &models.UserList{}
-	rows, err := db.Conn.Query("SELECT * FROM Users ORDER BY ID DESC")
+	rows, err := db.Conn.Query("SELECT * FROM users order by id offset $1 limit $2", start, page)
 	if err != nil {
 		return list, err
 	}
@@ -24,50 +22,28 @@ func (db Database) GetAllUsers() (*models.UserList, error) {
 	}
 	return list, nil
 }
-func (db Database) AddUser(User *models.User) error {
-	var id string
-	query := `INSERT INTO Users (id, name, username) VALUES ($1, $2, $3) RETURNING id`
-	err := db.Conn.QueryRow(query, User.ID, User.Name, User.Username).Scan(&id)
+
+func (db Database) GetAllUsers(User *models.User) (*models.UserList, error) {
+	list := &models.UserList{}
+	rows, err := db.Conn.Query("SELECT * FROM Users where id = $1", User.ID)
 	if err != nil {
-		return err
+		return list, err
 	}
-	User.ID = id
-	return nil
+	for rows.Next() {
+		var User models.User
+		err := rows.Scan(&User.ID, &User.Name, &User.Username)
+		if err != nil {
+			return list, err
+		}
+		list.Users = append(list.Users, User)
+	}
+	return list, nil
 }
 
-func (db Database) AddUserInDb(records chan []string) error {
-	var err error
-	sqlStr := "INSERT INTO Users (id, name, username) VALUES "
-	vals := []interface{}{}
-
-	for record := range records {
-		sqlStr += "(?, ?, ?),"
-		vals = append(vals, record[0], record[1], record[2])
-	}
-
-	//trim the last ,
-	sqlStr = strings.TrimSuffix(sqlStr, ",")
-
-	//Replacing ? with $n for postgres
-	sqlStr = replaceSQL(sqlStr, "?")
-
-	//format all vals at once
-	stmt, err := db.Conn.Prepare(sqlStr)
-	if err != nil {
-		return err
-	}
-	_, err = stmt.Exec(vals...)
+func (db Database) CopyTable() error {
+	_, err := db.Conn.Exec(fmt.Sprintf("COPY users(id, username, name) FROM '%s' DELIMITER ',' CSV", "/tmp/users.csv"))
 	if err != nil {
 		return err
 	}
 	return nil
-}
-
-// ReplaceSQL replaces the instance occurrence of any string pattern with an increasing $n based sequence
-func replaceSQL(old, searchPattern string) string {
-	tmpCount := strings.Count(old, searchPattern)
-	for m := 1; m <= tmpCount; m++ {
-		old = strings.Replace(old, searchPattern, "$"+strconv.Itoa(m), 1)
-	}
-	return old
 }
