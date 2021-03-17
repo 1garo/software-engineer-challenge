@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	HOST = "database"
+	HOST = "ec2-54-145-102-149.compute-1.amazonaws.com"
 	PORT = 5432
 )
 
@@ -22,7 +22,7 @@ type Database struct {
 
 func Initialize(username, password, database string) (Database, error) {
 	db := Database{}
-	dsn := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
+	dsn := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=require",
 		HOST, PORT, username, password, database)
 	conn, err := sql.Open("postgres", dsn)
 	if err != nil {
