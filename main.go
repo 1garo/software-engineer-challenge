@@ -1,21 +1,3 @@
-// migrate create -ext sql -dir db/migrations -seq create_items_table
-/*
-testing:
-	- docker-compose up --build
-    - example of export
-        - POSTGRESQL_URL="
-            postgres://
-            ${POSTGRES_USER}:${POSTGRES_PASSWORD}
-            @localhost:5432/
-            ${POSTGRES_DB}?sslmode=disable"
-    - export POSTGRESQL_URL="postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@localhost:5432/${POSTGRES_DB}?sslmode=disable"─╯
-    - migrate -database ${POSTGRESQL_URL} -path db/migrations up
-	- curl -X POST \
-	http://localhost:8080/items -H "Content-type: application/json" \
-	-d '{ "id": "065d8403-8a8f-484d-b602-9138ff7dedcf", "name": "Wadson marcia", "username": "wadson.marcia"}'
-*/
-// migrate -database ${POSTGRESQL_URL} -path db/migrations up
-
 package main
 
 import (
@@ -58,8 +40,7 @@ func main() {
 	}
 
 	go func() {
-		resp := handler.Pfile()
-		handler.Parsing(resp)	
+		// handler.Pfile()
 		server.Serve(listener)
 	}()
 	defer Stop(server)
