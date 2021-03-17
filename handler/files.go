@@ -5,55 +5,65 @@ import (
 	"io"
 	"log"
 	"os"
-
-	"github.com/PicPay/software-engineer-challenge/models"
 )
 
-func Pfile() [][]string {
-	// file, _ := ioutil.ReadDir("./tmp/new-f.csv")
-	file, err := os.Open("./tmp/new-f.csv")
+func Pfile() {
+	file, err := os.Open("./tmp/users.csv")
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	parser := csv.NewReader(file)
-	record := make([][]string, 0)
-	// defer parsing(records)
-	for {
-		records, err := parser.Read()
-		// if records, err := parser.Read(); err != nil {
-		// }
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			log.Fatal(err)
-		}
+	records := make(chan []string)
+	go func() {
+		parser := csv.NewReader(file)
 
-		record = append(record, records)
-		// fmt.Println(record)
-	}
-	return record
-	// Parsing(record)
-}
-
-func Print_records(records [][]string) {
-	log.Println(records)
-	for record, a := range records {
-		log.Println(record, a)
+		defer close(records)
+		for {
+			record, err := parser.Read()
+			if err == io.EOF {
+				break
+			}
+			if err != nil {
+				log.Fatal(err)
+			}
+			records <- record
+		}
+	}()
+	err = dbInstance.CopyTable()
+	if err != nil {
+		log.Fatal(err)
 	}
 }
-
-//TODO: refactor it to use chan and concurrency 
-func Parsing(records [][]string) {
-	log.Println("entrou aqui")
-	for _, record := range records {
-		User := &models.User{ID: record[0], Name: record[1], Username: record[2]}
-		log.Println(User)
-		if err := dbInstance.AddUser(User); err != nil {
-			log.Fatal(err)
-		}
-		// log.Println("going to the next")
-		// fmt.Println(record[i])
+func Tfile() chan []string {
+	file, err := os.Open("./tmp/lista_relevancia_1.txt")
+	if err != nil {
+		log.Fatal(err)
 	}
+	file2, err := os.Open("./tmp/lista_relevancia_2.txt")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	files := []io.Reader{file, file2}
+	records := make(chan []string)
+	go func() {
+		defer close(records)
+		for _, file := range files {
+			parser := csv.NewReader(file)
+
+			for {
+				record, err := parser.Read()
+				if err == io.EOF {
+					break
+				}
+				if err != nil {
+					log.Fatal(err)
+				}
+				records <- record
+			}
+		}
+
+	}()
+
+	return records
 }
