@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"sort"
 	"strconv"
 
 	"github.com/PicPay/software-engineer-challenge/models"
@@ -16,10 +15,10 @@ import (
 var UserIDKey = "UserID"
 
 func users(router chi.Router) {
-	router.Get("/", getAllUsers)
+	router.Get("/", getUsers)
 }
 
-func getAllUsers(w http.ResponseWriter, r *http.Request) {
+func getUsers(w http.ResponseWriter, r *http.Request) {
 	var p models.Req
 	var err error
 	resOrdered, resAux, res := &models.UserList{},
@@ -31,10 +30,6 @@ func getAllUsers(w http.ResponseWriter, r *http.Request) {
 		render.Render(w, r, ErrorRenderer(err))
 		return
 	}
-	/*
-		if the id sent on the request do not exist on the db,
-		it just skip it and go for the next one that can be found
-	*/
 	if p.Page != 0 {
 		var start int
 		MAX_PAGE_SIZE := 538545
@@ -62,25 +57,7 @@ func getAllUsers(w http.ResponseWriter, r *http.Request) {
 	log.Printf("%d users found on db -> %v", len(res.Users), res.Users)
 	resp := Tfile()
 
-	ids_1 := map[string]int{}
-	aux, i := 0, 0
-	for r := range resp {
-		ids_1[r[0]] = aux
-		aux += 1
-	}
-
-	sort.Slice(
-		res.Users,
-		func(i, j int) bool { return ids_1[res.Users[i].ID] < ids_1[res.Users[j].ID] })
-
-	for _, user := range res.Users {
-		if _, ok := ids_1[user.ID]; ok {
-			resOrdered.Users = append(resOrdered.Users, user)
-			i += 1
-		} else {
-			resAux.Users = append(resAux.Users, user)
-		}
-	}
+	Parsing(&resp, res, resOrdered, resAux)
 
 	resOrdered.Users = append(resOrdered.Users, resAux.Users...)
 	if err := render.Render(w, r, resOrdered); err != nil {
